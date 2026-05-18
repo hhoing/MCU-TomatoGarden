@@ -3,6 +3,14 @@
 An IoT-connected smart plant monitoring system for tomatoes, built on the [Seeed Wio Terminal](https://www.seeedstudio.com/Wio-Terminal-p-4509.html).  
 Sensor data is sent to **Azure IoT Hub** in real time and the device gives immediate visual feedback through a color-coded status display.
 
+## Screenshots
+
+| Normal | Warning | Danger |
+|--------|---------|--------|
+| ![normal](assets/screen_normal.jpg) | ![warning](assets/screen_warning.jpg) | ![danger](assets/screen_danger.jpg) |
+
+> Replace the placeholder images above with actual photos of the Wio Terminal display.
+
 ## Features
 
 - **Multi-sensor monitoring** — temperature, humidity, atmospheric pressure (BME280) and soil moisture (analog sensor)
@@ -16,11 +24,60 @@ Sensor data is sent to **Azure IoT Hub** in real time and the device gives immed
 
 ## Hardware
 
-| Component | Notes |
-|-----------|-------|
-| Seeed Wio Terminal | Main MCU + TFT display |
-| BME280 | Temperature, humidity & pressure (I2C) |
-| Soil moisture sensor | Analog input A1 |
+| Component | Interface | Notes |
+|-----------|-----------|-------|
+| Seeed Wio Terminal | — | Main MCU + TFT display |
+| BME280 | I2C | Temperature, humidity & pressure |
+| Soil moisture sensor | Analog (A1) | Raw ADC value |
+
+## Communication Protocols
+
+```
+[Wio Terminal]
+     │
+     ├─ I2C ──────────────► BME280 (temp / humid / press)
+     │
+     ├─ ADC (A1) ─────────► Soil moisture sensor
+     │
+     ├─ WiFi (802.11) ────► Router
+     │       │
+     │       ├─ UDP (NTP) ─────────────► time.cloudflare.com  (clock sync)
+     │       │
+     │       └─ TCP/TLS (port 8883)
+     │               │
+     │               ├─ MQTT ──────────► Azure IoT DPS        (first boot provisioning)
+     │               │                   global.azure-devices-provisioning.net
+     │               │
+     │               └─ MQTT ──────────► Azure IoT Hub        (ongoing telemetry)
+     │                                   {hub}.azure-devices.net
+     │
+     └─ USB Serial ───────► PC           (debug log / CLI config)
+```
+
+### MQTT Topics (Azure IoT Hub)
+
+| Direction | Topic | Purpose |
+|-----------|-------|---------|
+| Publish | `devices/{id}/messages/events/` | Sensor telemetry |
+| Subscribe | `$iothub/methods/POST/#` | Direct method commands |
+| Publish | `$iothub/methods/res/{status}/?$rid={id}` | Command response |
+| Subscribe | `devices/{id}/messages/devicebound/#` | Cloud-to-device messages |
+
+### Telemetry Payload
+
+```json
+{
+  "temp":  24,
+  "humid": 60,
+  "press": 1013,
+  "soil":  450
+}
+```
+
+### SAS Token
+
+Authentication uses an HMAC-SHA256 signed Shared Access Signature (SAS) token generated on-device with Mbed TLS.  
+Token lifetime is set to **3600 seconds** and the device reconnects automatically at 85% of the lifetime.
 
 ## Risk Thresholds
 
@@ -51,7 +108,7 @@ Sensor data is sent to **Azure IoT Hub** in real time and the device gives immed
 ## Software Stack
 
 - **PlatformIO** (AtmelSAM / Arduino framework)
-- **Azure SDK for Embedded C** (via `azure-sdk-for-c-arduino`)
+- **Azure SDK for Embedded C** (`azure-sdk-for-c-arduino`)
 - **PubSubClient** — MQTT client
 - **NTP** — time synchronisation for SAS token generation
 - **AceButton** — button event handling
@@ -98,29 +155,19 @@ pio run --target upload
 ```
 TomatoGarden/
 ├── src/
-│   ├── main.cpp            # Application logic
-│   ├── AzureDpsClient.cpp  # DPS registration
-│   ├── Signature.cpp       # HMAC-SHA256 SAS token
+│   ├── main.cpp            # Application logic & display
+│   ├── AzureDpsClient.cpp  # DPS registration over MQTT
+│   ├── Signature.cpp       # HMAC-SHA256 SAS token generation
 │   ├── Storage.cpp         # Flash-based config store
-│   ├── CliMode.cpp         # Interactive config mode
-│   ├── Bitmap.cpp          # Splash screen bitmap
-│   └── imgArray.cpp        # Status character images
+│   ├── CliMode.cpp         # Interactive serial config mode
+│   ├── Bitmap.cpp          # Splash screen bitmap (C array)
+│   └── imgArray.cpp        # Status character images (C array)
 ├── include/
 │   ├── Config.h            # Wi-Fi & Azure credentials
 │   └── ...
+├── assets/                 # Screenshots
 ├── platformio.ini
 └── README.md
-```
-
-## Telemetry Payload
-
-```json
-{
-  "temp":  24,
-  "humid": 60,
-  "press": 1013,
-  "soil":  450
-}
 ```
 
 ## License
