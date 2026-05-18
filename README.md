@@ -5,13 +5,10 @@ Sensor data is sent to **Azure IoT Hub** in real time and the device gives immed
 
 ## Screenshots
 
-| Normal | Warning | Danger |
-|<img width="337" height="255" alt="image" src="https://github.com/user-attachments/assets/9d38e52a-929d-4237-9ef9-fa1a6ed849be" />
-|<img width="345" height="243" alt="image" src="https://github.com/user-attachments/assets/8303e384-4d35-4ad3-8346-afef6c73eab3" />
-|<img width="346" height="255" alt="image" src="https://github.com/user-attachments/assets/75130a9c-c7dc-47df-a811-6fabbe661062" />
-|
-
-> Replace the placeholder images above with actual photos of the Wio Terminal display.
+| 🟢 Normal | 🟠 Warning | 🔴 Danger |
+|:---------:|:----------:|:---------:|
+| <img width="280" src="https://github.com/user-attachments/assets/9d38e52a-929d-4237-9ef9-fa1a6ed849be" /> | <img width="280" src="https://github.com/user-attachments/assets/8303e384-4d35-4ad3-8346-afef6c73eab3" /> | <img width="280" src="https://github.com/user-attachments/assets/75130a9c-c7dc-47df-a811-6fabbe661062" /> |
+| All sensors in range | Minor deviation detected | Soil moisture critical |
 
 ## Features
 
