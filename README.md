@@ -1,4 +1,4 @@
-<img width="337" height="255" alt="image" src="https://github.com/user-attachments/assets/3baf2cac-3484-45c8-b1e4-9ed9269045bd" /># TomatoGarden
+# TomatoGarden
 
 An IoT-connected smart plant monitoring system for tomatoes, built on the [Seeed Wio Terminal](https://www.seeedstudio.com/Wio-Terminal-p-4509.html).  
 Sensor data is sent to **Azure IoT Hub** in real time and the device gives immediate visual feedback through a color-coded status display.
@@ -7,7 +7,7 @@ Sensor data is sent to **Azure IoT Hub** in real time and the device gives immed
 
 | Normal | Warning | Danger |
 |--------|---------|--------|
-| <img width="337" height="255" alt="image" src="https://github.com/user-attachments/assets/6d6646e4-28cc-4ef4-b06e-2b4021fa74f6" />
+| ![warning](assets/screen_warning.jpg)
  | ![warning](assets/screen_warning.jpg) | ![danger](assets/screen_danger.jpg) |
 
 > Replace the placeholder images above with actual photos of the Wio Terminal display.
