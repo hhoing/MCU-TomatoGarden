@@ -169,6 +169,3 @@ TomatoGarden/
 └── README.md
 ```
 
-## License
-
-MIT
