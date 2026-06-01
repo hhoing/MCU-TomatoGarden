@@ -1,0 +1,128 @@
+# TomatoGarden
+
+An IoT-connected smart plant monitoring system for tomatoes, built on the [Seeed Wio Terminal](https://www.seeedstudio.com/Wio-Terminal-p-4509.html).  
+Sensor data is sent to **Azure IoT Hub** in real time and the device gives immediate visual feedback through a color-coded status display.
+
+## Features
+
+- **Multi-sensor monitoring** — temperature, humidity, atmospheric pressure (BME280) and soil moisture (analog sensor)
+- **3-level risk assessment** per sensor:  
+  - 🟢 Normal &nbsp;|&nbsp; 🟠 Warning &nbsp;|&nbsp; 🔴 Danger
+- **Animated status character** — a tomato image changes expression (happy / sad / warning) based on overall plant health
+- **Azure IoT Hub telemetry** — sends `temp`, `humid`, `press`, `soil` every 2 seconds over MQTT/TLS
+- **Azure IoT DPS support** — individual or group symmetric-key enrollment
+- **CLI configuration mode** — hold all three buttons at boot to enter an interactive Wi-Fi / DPS setup menu
+- **Remote buzzer command** — trigger the onboard buzzer from the cloud via `ringBuzzer` direct method
+
+## Hardware
+
+| Component | Notes |
+|-----------|-------|
+| Seeed Wio Terminal | Main MCU + TFT display |
+| BME280 | Temperature, humidity & pressure (I2C) |
+| Soil moisture sensor | Analog input A1 |
+
+## Risk Thresholds
+
+### Temperature
+
+| Level | Range |
+|-------|-------|
+| Normal | 21–28 °C |
+| Warning | 18–21 °C or 28–30 °C |
+| Danger | ≤ 17 °C or ≥ 31 °C |
+
+### Humidity
+
+| Level | Range |
+|-------|-------|
+| Normal | 55–65 % |
+| Warning | 45–54 % or 66–75 % |
+| Danger | ≤ 44 % or ≥ 76 % |
+
+### Soil Moisture (raw ADC)
+
+| Level | Range |
+|-------|-------|
+| Normal | 430–499 |
+| Warning | 380–429 or 500–599 |
+| Danger | ≤ 379 or ≥ 600 |
+
+## Software Stack
+
+- **PlatformIO** (AtmelSAM / Arduino framework)
+- **Azure SDK for Embedded C** (via `azure-sdk-for-c-arduino`)
+- **PubSubClient** — MQTT client
+- **NTP** — time synchronisation for SAS token generation
+- **AceButton** — button event handling
+- **Grove_BME280** — sensor driver
+- **TFT_eSPI** — display driver
+
+## Getting Started
+
+### 1. Prerequisites
+
+- [PlatformIO IDE](https://platformio.org/install/ide?install=vscode) (VS Code extension) or PlatformIO CLI
+- An **Azure IoT Hub** and either a device identity (symmetric key) or an **Azure IoT DPS** enrollment
+
+### 2. Configuration
+
+#### Option A — CLI mode (recommended)
+
+Boot the device while holding all three top buttons.  
+Use the serial terminal to enter your Wi-Fi SSID, password, DPS ID scope, registration ID, and symmetric key.  
+Values are saved to flash and used on every subsequent boot.
+
+#### Option B — Hardcode in `include/Config.h`
+
+1. Comment out `#define USE_CLI`.
+2. Fill in the placeholders:
+
+```cpp
+#define IOT_CONFIG_WIFI_SSID       "your-ssid"
+#define IOT_CONFIG_WIFI_PASSWORD   "your-password"
+// Direct IoT Hub:
+#define IOT_CONFIG_IOTHUB          "your-hub.azure-devices.net"
+#define IOT_CONFIG_DEVICE_ID       "your-device-id"
+#define IOT_CONFIG_SYMMETRIC_KEY   "your-key"
+```
+
+### 3. Build & Flash
+
+```bash
+pio run --target upload
+```
+
+## Project Structure
+
+```
+TomatoGarden/
+├── src/
+│   ├── main.cpp            # Application logic
+│   ├── AzureDpsClient.cpp  # DPS registration
+│   ├── Signature.cpp       # HMAC-SHA256 SAS token
+│   ├── Storage.cpp         # Flash-based config store
+│   ├── CliMode.cpp         # Interactive config mode
+│   ├── Bitmap.cpp          # Splash screen bitmap
+│   └── imgArray.cpp        # Status character images
+├── include/
+│   ├── Config.h            # Wi-Fi & Azure credentials
+│   └── ...
+├── platformio.ini
+└── README.md
+```
+
+## Telemetry Payload
+
+```json
+{
+  "temp":  24,
+  "humid": 60,
+  "press": 1013,
+  "soil":  450
+}
+```
+
+## License
+
+MIT
