@@ -1,0 +1,36 @@
+{
+  "@id": "dtmi:local:wioterminal_aziot_example;7",
+  "@type": "Interface",
+  "@context": "dtmi:dtdl:context;2",
+  "displayName": "Seeed Wio Terminal",
+  "description": {
+    "en": "Upload data from Barometer and Soil Sensor to Azure IoT Central."
+  },
+  "contents": [
+    {
+      "@type": ["Telemetry"],
+      "name": "temp",
+      "displayName": { "en": "Temperature" },
+      "schema": "integer"
+    },
+    {
+      "@type": ["Telemetry"],
+      "name": "humid",
+      "displayName": { "en": "Humidity" },
+      "schema": "integer"
+    },
+    {
+      "@type": ["Telemetry"],
+      "name": "press",
+      "displayName": { "en": "Pressure" },
+      "schema": "integer"
+    },
+    {
+      "@type": ["Telemetry"],
+      "name": "soil",
+      "displayName": { "en": "Soil Moisture" },
+      "schema": "integer"
+    }
+
+  ]
+}
