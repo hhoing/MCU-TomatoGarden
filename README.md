@@ -18,7 +18,7 @@ The device monitors a tomato plant's growing environment, visualizes the current
 
 | Normal | Warning | Danger |
 |:---:|:---:|:---:|
-| <img width="280" src="https://github.com/user-attachments/assets/9d38e52a-929d-4237-9ef9-fa1a6ed849be" /> | <img width="280" src="https://github.com/user-attachments/assets/8303e384-4d35-4ad3-8346-afef6c73eab3" /> | <img width="280" src="https://github.com/user-attachments/assets/75130a9c-c7dc-47df-a811-6fabbe661062" /> |
+| <img width="293" height="221" alt="Normal LCD state" src="https://github.com/user-attachments/assets/b3020714-d380-4960-b3e7-e10962e99e36" /> | <img width="293" height="207" alt="Warning LCD state" src="https://github.com/user-attachments/assets/aa2e6078-15d2-431c-8209-6bd64bbcb7ce" /> | <img width="302" height="221" alt="Danger LCD state" src="https://github.com/user-attachments/assets/827f3694-d143-4e3d-bfe0-bd6ff8d5566c" /> |
 | All sensors in range | Minor deviation detected | Critical soil moisture |
 
 ## Core Features
