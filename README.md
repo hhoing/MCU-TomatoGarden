@@ -1,171 +1,256 @@
 # TomatoGarden
 
-An IoT-connected smart plant monitoring system for tomatoes, built on the [Seeed Wio Terminal](https://www.seeedstudio.com/Wio-Terminal-p-4509.html).  
-Sensor data is sent to **Azure IoT Hub** in real time and the device gives immediate visual feedback through a color-coded status display.
+TomatoGarden is an IoT smart-farm project built with a Seeed Wio Terminal and C++.
+The device monitors a tomato plant's growing environment, visualizes the current condition on the built-in LCD, sends telemetry to Azure IoT Central, and supports mobile push notifications through cloud-side trigger rules.
 
-## Screenshots
+## Project Summary
 
-| 🟢 Normal | 🟠 Warning | 🔴 Danger |
-|:---------:|:----------:|:---------:|
+| Item | Description |
+|---|---|
+| Period | 2025.05 - 2025.10 |
+| Platform | Seeed Wio Terminal, PlatformIO, Arduino/C++ |
+| Cloud | Azure IoT Hub, Azure IoT DPS, Azure IoT Central |
+| Goal | Measure plant environment data in real time, show the current state on LCD, and send state-based mobile alerts |
+| Role | Team lead, idea proposal, Azure integration, event handling |
+| Keywords | Azure, C++, LCD, Mobile notification, MQTT, IoT Central |
+
+## LCD State Examples
+
+| Normal | Warning | Danger |
+|:---:|:---:|:---:|
 | <img width="280" src="https://github.com/user-attachments/assets/9d38e52a-929d-4237-9ef9-fa1a6ed849be" /> | <img width="280" src="https://github.com/user-attachments/assets/8303e384-4d35-4ad3-8346-afef6c73eab3" /> | <img width="280" src="https://github.com/user-attachments/assets/75130a9c-c7dc-47df-a811-6fabbe661062" /> |
-| All sensors in range | Minor deviation detected | Soil moisture critical |
+| All sensors in range | Minor deviation detected | Critical soil moisture |
 
-## Features
+## Core Features
 
-- **Multi-sensor monitoring** — temperature, humidity, atmospheric pressure (BME280) and soil moisture (analog sensor)
-- **3-level risk assessment** per sensor:  
-  - 🟢 Normal &nbsp;|&nbsp; 🟠 Warning &nbsp;|&nbsp; 🔴 Danger
-- **Animated status character** — a tomato image changes expression (happy / sad / warning) based on overall plant health
-- **Azure IoT Hub telemetry** — sends `temp`, `humid`, `press`, `soil` every 2 seconds over MQTT/TLS
-- **Azure IoT DPS support** — individual or group symmetric-key enrollment
-- **CLI configuration mode** — hold all three buttons at boot to enter an interactive Wi-Fi / DPS setup menu
-- **Remote buzzer command** — trigger the onboard buzzer from the cloud via `ringBuzzer` direct method
+- Real-time smart-farm monitoring with temperature, humidity, and soil-moisture readings.
+- LCD interface named `Tomato Guard` with sensor icons, numeric values, color status dots, and tomato character images.
+- Three-level condition classification for each sensor: normal, warning, and danger.
+- Overall state machine that switches the LCD tomato character between happy, sad, and danger states.
+- Azure IoT DPS provisioning and Azure IoT Hub MQTT telemetry over TLS.
+- Azure IoT Central dashboard support for real-time telemetry charts.
+- Cloud-side trigger workflow for mobile push alerts.
+- 80 custom notification messages, designed as 8 condition categories with 10 random messages each.
+- USB serial CLI configuration mode for Wi-Fi and Azure IoT Central/DPS credentials.
+- Remote `ringBuzzer` direct method command for testing cloud-to-device control.
 
-## Hardware
+## System Flow
 
-| Component | Interface | Notes |
-|-----------|-----------|-------|
-| Seeed Wio Terminal | — | Main MCU + TFT display |
-| BME280 | I2C | Temperature, humidity & pressure |
-| Soil moisture sensor | Analog (A1) | Raw ADC value |
-
-## Communication Protocols
-
-```
-[Wio Terminal]
-     │
-     ├─ I2C ──────────────► BME280 (temp / humid / press)
-     │
-     ├─ ADC (A1) ─────────► Soil moisture sensor
-     │
-     ├─ WiFi (802.11) ────► Router
-     │       │
-     │       ├─ UDP (NTP) ─────────────► time.cloudflare.com  (clock sync)
-     │       │
-     │       └─ TCP/TLS (port 8883)
-     │               │
-     │               ├─ MQTT ──────────► Azure IoT DPS        (first boot provisioning)
-     │               │                   global.azure-devices-provisioning.net
-     │               │
-     │               └─ MQTT ──────────► Azure IoT Hub        (ongoing telemetry)
-     │                                   {hub}.azure-devices.net
-     │
-     └─ USB Serial ───────► PC           (debug log / CLI config)
+```mermaid
+flowchart LR
+    Sensors["BME280 + soil sensor"] --> Device["Wio Terminal firmware"]
+    Device --> LCD["LCD status UI"]
+    Device --> MQTT["MQTT over TLS"]
+    MQTT --> DPS["Azure IoT DPS"]
+    DPS --> Hub["Azure IoT Hub"]
+    Hub --> Central["Azure IoT Central dashboard"]
+    Central --> Rules["State-based trigger rules"]
+    Rules --> Flow["Power Automate / Flow"]
+    Flow --> Push["Mobile push notification"]
 ```
 
-### MQTT Topics (Azure IoT Hub)
+## LCD Interface
 
-| Direction | Topic | Purpose |
-|-----------|-------|---------|
-| Publish | `devices/{id}/messages/events/` | Sensor telemetry |
-| Subscribe | `$iothub/methods/POST/#` | Direct method commands |
-| Publish | `$iothub/methods/res/{status}/?$rid={id}` | Command response |
-| Subscribe | `devices/{id}/messages/devicebound/#` | Cloud-to-device messages |
+The firmware draws the interface directly on the Wio Terminal TFT LCD.
 
-### Telemetry Payload
+- Title: `Tomato Guard`
+- Left column: sensor icons for temperature, humidity, and soil moisture
+- Center values: current sensor readings
+- Status dots:
+  - Green: normal
+  - Orange: warning
+  - Red: danger
+- Direction markers:
+  - `^`: value is too low and should increase
+  - `v`: value is too high and should decrease
+- Right side: tomato character image
+  - Happy tomato for normal state
+  - Sad tomato when multiple warnings occur
+  - Danger image and `Warning!` text when any sensor reaches danger state
+
+## Sensor State Logic
+
+The firmware classifies each sensor into a numeric risk level.
+
+| Sensor | Normal | Warning | Danger |
+|---|---:|---:|---:|
+| Temperature | 21-28 C | 18-20 C or 29-30 C | <=17 C or >=31 C |
+| Humidity | 55-65% | 45-54% or 66-75% | <=44% or >=76% |
+| Soil moisture | 430-499 raw ADC | 380-429 or 500-599 | <=379 or >=600 |
+
+Overall LCD state is decided from the three risk levels:
+
+| Overall state | Condition | LCD result |
+|---|---|---|
+| Normal | No danger and fewer than two warnings | Happy tomato |
+| Sad | Two or more warning sensors, with no danger | Sad tomato |
+| Danger | At least one danger sensor | Danger image and `Warning!` |
+
+## Azure Telemetry
+
+The device sends telemetry every 2 seconds.
 
 ```json
 {
-  "temp":  24,
+  "temp": 24,
   "humid": 60,
   "press": 1013,
-  "soil":  450
+  "soil": 450
 }
 ```
 
-### SAS Token
+Current firmware reads temperature and humidity from the BME280 sensor and soil moisture from analog pin `A1`.
+The DTDL model and telemetry payload also include a `press` field for pressure data, so the Azure dashboard can keep a fixed schema.
 
-Authentication uses an HMAC-SHA256 signed Shared Access Signature (SAS) token generated on-device with Mbed TLS.  
-Token lifetime is set to **3600 seconds** and the device reconnects automatically at 85% of the lifetime.
+## MQTT Topics
 
-## Risk Thresholds
+| Direction | Topic | Purpose |
+|---|---|---|
+| Publish | `devices/{deviceId}/messages/events/` | Sensor telemetry |
+| Subscribe | `$iothub/methods/POST/#` | Direct method commands |
+| Publish | `$iothub/methods/res/{status}/?$rid={requestId}` | Direct method response |
+| Subscribe | `devices/{deviceId}/messages/devicebound/#` | Cloud-to-device messages |
 
-### Temperature
+## Mobile Notification Workflow
 
-| Level | Range |
-|-------|-------|
-| Normal | 21–28 °C |
-| Warning | 18–21 °C or 28–30 °C |
-| Danger | ≤ 17 °C or ≥ 31 °C |
+The mobile alert feature is designed outside the firmware, using telemetry from Azure IoT Central.
+The firmware continuously publishes raw sensor values, and Azure rules classify the current state for notification.
 
-### Humidity
+Trigger process:
 
-| Level | Range |
-|-------|-------|
-| Normal | 55–65 % |
-| Warning | 45–54 % or 66–75 % |
-| Danger | ≤ 44 % or ≥ 76 % |
+```mermaid
+flowchart LR
+    A["Scheduled or telemetry-triggered check"] --> B["Collect latest sensor data"]
+    B --> C["Classify condition"]
+    C --> D["Choose random message"]
+    D --> E["Send mobile push notification"]
+```
 
-### Soil Moisture (raw ADC)
+Message design:
 
-| Level | Range |
-|-------|-------|
-| Normal | 430–499 |
-| Warning | 380–429 or 500–599 |
-| Danger | ≤ 379 or ≥ 600 |
+- 8 condition categories
+- 10 messages per category
+- 80 total user-facing push messages
+- Different wording for comfortable, dry, wet, hot, cold, humid, warning, and danger-like states
+
+Example notifications:
+
+- "뿌리까지 행복한 하루."
+- "햇살도 습도도 흙도 모두 최고예요!"
+- "오늘은... 정말 안 괜찮았어요. 말 걸지 마세요."
+
+## Hardware
+
+| Component | Interface | Role |
+|---|---|---|
+| Seeed Wio Terminal | MCU + LCD + Wi-Fi | Main controller and display |
+| Grove BME280 | I2C | Temperature and humidity measurement |
+| Soil moisture sensor | Analog `A1` | Soil moisture measurement |
+| Wio buzzer | PWM | Cloud-triggered buzzer test |
+| Wio buttons A/B/C | GPIO | Boot-time CLI mode and button telemetry |
 
 ## Software Stack
 
-- **PlatformIO** (AtmelSAM / Arduino framework)
-- **Azure SDK for Embedded C** (`azure-sdk-for-c-arduino`)
-- **PubSubClient** — MQTT client
-- **NTP** — time synchronisation for SAS token generation
-- **AceButton** — button event handling
-- **Grove_BME280** — sensor driver
-- **TFT_eSPI** — display driver
+- PlatformIO
+- Arduino framework for Seeed Wio Terminal
+- Azure SDK for Embedded C
+- PubSubClient for MQTT
+- Seeed RPC Wi-Fi and mbedTLS libraries
+- Grove BME280 driver
+- TFT_eSPI for LCD drawing
+- AceButton for Wio button events
+- NTP for SAS token time synchronization
+- MsgPack and QSPI external flash for local configuration storage
 
-## Getting Started
+## Configuration
 
-### 1. Prerequisites
+The default build uses `USE_CLI`.
+Boot the device while holding all three top buttons to enter serial configuration mode.
 
-- [PlatformIO IDE](https://platformio.org/install/ide?install=vscode) (VS Code extension) or PlatformIO CLI
-- An **Azure IoT Hub** and either a device identity (symmetric key) or an **Azure IoT DPS** enrollment
+Useful CLI commands:
 
-### 2. Configuration
+| Command | Purpose |
+|---|---|
+| `show_settings` | Print saved Wi-Fi and Azure settings |
+| `set_wifissid <SSID>` | Save Wi-Fi SSID |
+| `set_wifipwd <Password>` | Save Wi-Fi password |
+| `set_az_idscope <IdScope>` | Save Azure DPS ID scope |
+| `set_az_regid <RegistrationId>` | Save DPS registration ID |
+| `set_az_symkey <SymmetricKey>` | Save symmetric key |
+| `set_az_iotc <IdScope> <GroupSasKey> <DeviceId>` | Configure Azure IoT Central group enrollment |
+| `set_az_iotc_dev <IdScope> <DeviceId> <DeviceSasKey>` | Configure Azure IoT Central individual enrollment |
+| `reset_factory_settings` | Erase saved settings |
 
-#### Option A — CLI mode (recommended)
+The settings are stored in external QSPI flash using MsgPack.
 
-Boot the device while holding all three top buttons.  
-Use the serial terminal to enter your Wi-Fi SSID, password, DPS ID scope, registration ID, and symmetric key.  
-Values are saved to flash and used on every subsequent boot.
+## Build and Upload
 
-#### Option B — Hardcode in `include/Config.h`
-
-1. Comment out `#define USE_CLI`.
-2. Fill in the placeholders:
-
-```cpp
-#define IOT_CONFIG_WIFI_SSID       "your-ssid"
-#define IOT_CONFIG_WIFI_PASSWORD   "your-password"
-// Direct IoT Hub:
-#define IOT_CONFIG_IOTHUB          "your-hub.azure-devices.net"
-#define IOT_CONFIG_DEVICE_ID       "your-device-id"
-#define IOT_CONFIG_SYMMETRIC_KEY   "your-key"
-```
-
-### 3. Build & Flash
+Install PlatformIO, connect the Wio Terminal, then run:
 
 ```bash
 pio run --target upload
 ```
 
+To run the same build used by GitHub Actions:
+
+```bash
+pio run
+```
+
 ## Project Structure
 
-```
+```text
 TomatoGarden/
-├── src/
-│   ├── main.cpp            # Application logic & display
-│   ├── AzureDpsClient.cpp  # DPS registration over MQTT
-│   ├── Signature.cpp       # HMAC-SHA256 SAS token generation
-│   ├── Storage.cpp         # Flash-based config store
-│   ├── CliMode.cpp         # Interactive serial config mode
-│   ├── Bitmap.cpp          # Splash screen bitmap (C array)
-│   └── imgArray.cpp        # Status character images (C array)
-├── include/
-│   ├── Config.h            # Wi-Fi & Azure credentials
-│   └── ...
-├── assets/                 # Screenshots
-├── platformio.ini
-└── README.md
+|-- .github/workflows/platformio.yml
+|-- assets/
+|   |-- azure-iot-explorer-send-command.gif
+|   `-- azure-iot-explorer-telemetry.gif
+|-- doc/
+|   |-- get-started-guide.md
+|   |-- get-started-guide.pdf
+|   `-- media/
+|-- include/
+|   |-- Config.h
+|   |-- Storage.h
+|   |-- Signature.h
+|   |-- AzureDpsClient.h
+|   `-- imgArray.h
+|-- src/
+|   |-- main.cpp
+|   |-- AzureDpsClient.cpp
+|   |-- CliMode.cpp
+|   |-- Signature.cpp
+|   |-- Storage.cpp
+|   |-- Bitmap.cpp
+|   `-- imgArray.cpp
+|-- platformio.ini
+|-- seeedkk-wioterminal-wioterminal_aziot_example.json
+`-- README.md
 ```
 
+## Code Notes
+
+- `src/main.cpp` contains sensor reads, LCD drawing, risk classification, telemetry publish, and direct method handling.
+- `src/AzureDpsClient.cpp` wraps Azure DPS registration over MQTT.
+- `src/Signature.cpp` generates SAS-token signatures with HMAC-SHA256.
+- `src/CliMode.cpp` implements the serial setup console.
+- `src/Storage.cpp` saves and loads configuration from external flash.
+- `include/imgArray.h` and `src/imgArray.cpp` contain the bitmap arrays used for the tomato LCD states.
+
+## Direct Method
+
+The firmware subscribes to Azure IoT Hub direct method topics and supports:
+
+```text
+ringBuzzer
+```
+
+The payload is parsed as a duration in milliseconds, then the Wio Terminal buzzer is turned on for that duration and the device returns a method response.
+
+## CI
+
+The repository includes a GitHub Actions workflow that installs PlatformIO and runs:
+
+```bash
+platformio run
+```
