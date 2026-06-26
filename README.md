@@ -135,9 +135,11 @@ Message design:
 
 Example notifications:
 
-- "뿌리까지 행복한 하루."
-- "햇살도 습도도 흙도 모두 최고예요!"
-- "오늘은... 정말 안 괜찮았어요. 말 걸지 마세요."
+|<img width="420" height="97" alt="image" src="https://github.com/user-attachments/assets/7ce5b207-9d66-4e1d-b15e-cebccc2bab3e" />
+|<img width="417" height="82" alt="image" src="https://github.com/user-attachments/assets/4f00ad49-c30f-4de9-8d29-e60e31971c67" />
+|<img width="417" height="91" alt="image" src="https://github.com/user-attachments/assets/c060859a-96d7-43cb-981d-15630f9b6d1b" />
+|
+
 
 ## Hardware
 
