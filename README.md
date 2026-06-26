@@ -99,6 +99,9 @@ The device sends telemetry every 2 seconds.
 }
 ```
 
+<img width="247" height="385" alt="image" src="https://github.com/user-attachments/assets/cf4a3d47-7bc9-484e-8088-1847e55116f2" />
+
+
 Current firmware reads temperature and humidity from the BME280 sensor and soil moisture from analog pin `A1`.
 The DTDL model and telemetry payload also include a `press` field for pressure data, so the Azure dashboard can keep a fixed schema.
 
@@ -135,10 +138,10 @@ Message design:
 
 Example notifications:
 
-|<img width="420" height="97" alt="image" src="https://github.com/user-attachments/assets/7ce5b207-9d66-4e1d-b15e-cebccc2bab3e" />
-|<img width="417" height="82" alt="image" src="https://github.com/user-attachments/assets/4f00ad49-c30f-4de9-8d29-e60e31971c67" />
-|<img width="417" height="91" alt="image" src="https://github.com/user-attachments/assets/c060859a-96d7-43cb-981d-15630f9b6d1b" />
-|
+<img width="420" height="97" alt="image" src="https://github.com/user-attachments/assets/7ce5b207-9d66-4e1d-b15e-cebccc2bab3e" />
+<img width="417" height="82" alt="image" src="https://github.com/user-attachments/assets/4f00ad49-c30f-4de9-8d29-e60e31971c67" />
+<img width="417" height="91" alt="image" src="https://github.com/user-attachments/assets/c060859a-96d7-43cb-981d-15630f9b6d1b" />
+
 
 
 ## Hardware
